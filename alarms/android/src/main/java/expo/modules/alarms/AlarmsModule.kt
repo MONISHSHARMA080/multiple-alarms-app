@@ -17,6 +17,7 @@ import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 
+
 class AlarmsModule : Module() {
     override fun definition() = ModuleDefinition {
         Name("Alarms")
@@ -33,18 +34,21 @@ class AlarmsModule : Module() {
     private val context get() = requireNotNull(appContext.reactContext)
 
     private fun setAlarm(hour: Int, minutes: Int, message: String, requestCode: Int) {
-    val calendar = Calendar.getInstance().apply {
+   val calendar = Calendar.getInstance().apply {
         set(Calendar.HOUR_OF_DAY, hour)
         set(Calendar.MINUTE, minutes)
         set(Calendar.SECOND, 0)
     }
-        val ii = minutes.toString()
-    Log.d("AlarmsModule", "HELLO WORLD"+ii)
+
+    Log.d("AlarmsModule", "Setting alarm for $hour:$minutes")
 
     val alarmIntent = Intent(context, AlarmReceiver::class.java).apply {
         putExtra("ALARM_MESSAGE", message)
-        putExtra("NOTIFICATION_ID", requestCode)  // Pass requestCode as notificationId
+        putExtra("NOTIFICATION_ID", requestCode)
+        putExtra("ALARM_HOUR", hour)
+        putExtra("ALARM_MINUTE", minutes)
     }
+
 
     val pendingIntent = PendingIntent.getBroadcast(
         context,
@@ -84,14 +88,41 @@ class AlarmsModule : Module() {
         alarmManager.cancel(pendingIntent)
     }
 }
-
-
 class AlarmReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context?, intent: Intent?) {
-        Log.d("AlarmsModule","udbc")
         val message = intent?.getStringExtra("ALARM_MESSAGE") ?: "Alarm!"
         val notificationId = intent?.getIntExtra("NOTIFICATION_ID", 0) ?: 0
+        val hour = intent?.getIntExtra("ALARM_HOUR", 0) ?: 0
+        val minute = intent?.getIntExtra("ALARM_MINUTE", 0) ?: 0
 
+        Log.d("AlarmsModule", "Alarm triggered: $message -- $notificationId")
+
+        val hourMinute = String.format("%02d:%02d", hour, minute)
+
+        context?.let {
+            showNotification(it, hourMinute, message, notificationId)
+        }
     }
 
+    private fun showNotification(context: Context, hourMinute: String, message: String, notificationId: Int) {
+        val channelId = "alarm_channel"
+        val channelName = "Alarm Notifications"
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(channelId, channelName, NotificationManager.IMPORTANCE_HIGH)
+            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
+        }
+
+        val builder = NotificationCompat.Builder(context, channelId)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentTitle("Alarm")
+            .setContentText("Time: $hourMinute\n$message")
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+
+        with(NotificationManagerCompat.from(context)) {
+            notify(notificationId, builder.build())
+        }
+    }
 }
