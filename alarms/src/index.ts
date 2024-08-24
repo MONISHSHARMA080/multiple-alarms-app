@@ -1,26 +1,13 @@
-import { NativeModulesProxy, EventEmitter, Subscription } from 'expo-modules-core';
+import Alarms from './AlarmsModule'
 
-// Import the native module. On web, it will be resolved to Alarms.web.ts
-// and on native platforms to Alarms.ts
-import AlarmsModule from './AlarmsModule';
-import AlarmsView from './AlarmsView';
-import { ChangeEventPayload, AlarmsViewProps } from './Alarms.types';
-
-// Get the native constant value.
-export const PI = AlarmsModule.PI;
-
-export function hello(): string {
-  return AlarmsModule.hello();
+export function getTheme(): string {
+  return Alarms.getTheme();
 }
 
-export async function setValueAsync(value: string) {
-  return await AlarmsModule.setValueAsync(value);
+export function setTheme(theme: string): void {
+  return Alarms.setTheme(theme);
 }
 
-const emitter = new EventEmitter(AlarmsModule ?? NativeModulesProxy.Alarms);
-
-export function addChangeListener(listener: (event: ChangeEventPayload) => void): Subscription {
-  return emitter.addListener<ChangeEventPayload>('onChange', listener);
+export function setAlarm(hour: number, minutes: number, message: string, requestCode:number): void {
+  return Alarms.setAlarm(hour, minutes, message, requestCode);
 }
-
-export { AlarmsView, AlarmsViewProps, ChangeEventPayload };
